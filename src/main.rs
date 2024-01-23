@@ -42,31 +42,20 @@ impl DatosJugabilidad {
 
 fn main() {
     let mut diccionario_situaciones: HashMap<String, DatosJugabilidad> = HashMap::new();
-    let content_csv = fs::read_to_string(PATH_FILE_CSV).unwrap();
-    let mut reader_builder_csv = ReaderBuilder::new().delimiter(b';').from_reader(content_csv.as_bytes());
-    let mut ultimo_dato_corrido: DatosJugabilidad = DatosJugabilidad::new();
+    diccionario_situaciones = crear_diccionario_data(PATH_FILE_CSV);
+    ejecutar_juego(diccionario_situaciones);
+}
 
-    for datos_csv in reader_builder_csv.records(){
-        let datos_string_record= datos_csv.unwrap();
-        let datos_corriendo = DatosJugabilidad::new_from(datos_string_record);
 
-        if datos_corriendo.clase_dato == "SITUACION" {
-                diccionario_situaciones.insert(datos_corriendo.tag.clone(), datos_corriendo.clone());
-                ultimo_dato_corrido = datos_corriendo;
-        }
-        else if datos_corriendo.clase_dato == "OPCION" {
-            ultimo_dato_corrido.opciones.push(datos_corriendo);
-            diccionario_situaciones.insert(ultimo_dato_corrido.tag.clone(), ultimo_dato_corrido.clone());
-        }
-    }
 
+fn ejecutar_juego(diccionario_situaciones: HashMap<String, DatosJugabilidad>) {
     //game lopp
     let mut vida_jugador: i32 = 100;
     let situacion_inicial = diccionario_situaciones["INICIO"].clone();
     let mut situacion_actual = situacion_inicial;
     
     loop{
-        print!("\n {}", situacion_actual.texto);
+        print!("\n\n {}", situacion_actual.texto);
         vida_jugador += situacion_actual.vida;
         print!("\n Tienes {} de vida\n", vida_jugador);
 
@@ -89,7 +78,32 @@ fn main() {
         let eleccion_del_jugador: usize = input_jugador.trim().parse().unwrap_or(99);
 
         if let Some(opciones) = situacion_actual.opciones.get(eleccion_del_jugador){
-        situacion_actual = diccionario_situaciones[&opciones.tag.un].clone();
+        situacion_actual = diccionario_situaciones[&opciones.tag].clone();
+        }
+        else {
+            print!("     opcion no valida     \n");    
         }
     }
+}
+
+fn crear_diccionario_data(path_file: &str) -> HashMap<String, DatosJugabilidad> {
+    let mut diccionario_situaciones: HashMap<String, DatosJugabilidad> = HashMap::new();
+    let content_csv = fs::read_to_string(path_file).unwrap();
+    let mut reader_builder_csv = ReaderBuilder::new().delimiter(b';').from_reader(content_csv.as_bytes());
+    let mut ultimo_dato_corrido: DatosJugabilidad = DatosJugabilidad::new();
+
+    for datos_csv in reader_builder_csv.records(){
+        let datos_string_record= datos_csv.unwrap();
+        let datos_corriendo = DatosJugabilidad::new_from(datos_string_record);
+
+        if datos_corriendo.clase_dato == "SITUACION" {
+                diccionario_situaciones.insert(datos_corriendo.tag.clone(), datos_corriendo.clone());
+                ultimo_dato_corrido = datos_corriendo;
+        }
+        else if datos_corriendo.clase_dato == "OPCION" {
+            ultimo_dato_corrido.opciones.push(datos_corriendo);
+            diccionario_situaciones.insert(ultimo_dato_corrido.tag.clone(), ultimo_dato_corrido.clone());
+        }
+    }
+    return diccionario_situaciones;
 }
